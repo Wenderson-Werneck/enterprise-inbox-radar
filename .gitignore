@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.sqlite
+*.db
+.venv/
+venv/
+*.json
+!fixtures/*.json
