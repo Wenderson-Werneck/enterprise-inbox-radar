@@ -1,0 +1,2323 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Inbox Radar — Central Executiva de Demandas & Follow-Up</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Surface Scale (Linear / Apple Pro Dark Standard) */
+      --bg-base: #080C14;
+      --bg-surface: #0D131F;
+      --bg-elevated: #121A2A;
+      --bg-card: #0F1726;
+      --bg-card-hover: #141E31;
+
+      /* Borders & Specular Highlights */
+      --border-subtle: rgba(255, 255, 255, 0.075);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --border-active: rgba(56, 189, 248, 0.55);
+      --surface-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      --shadow-panel: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+
+      /* High-Contrast Accessible Typography (WCAG AA/AAA) */
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+
+      /* Semantic Accent & Severity Tokens (One Primary Accent + Strict Severity) */
+      --accent-blue: #38BDF8;
+      --accent-indigo: #818CF8;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+
+      /* Radius Scale (Nested-Radius Law: 10px outer -> 6px inner -> 5px control) */
+      --radius-outer: 10px;
+      --radius-inner: 6px;
+      --radius-control: 5px;
+
+      /* Font Stacks */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Inline SVG Utility */
+    .ico {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      stroke-width: 1.85;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .ico-sm {
+      width: 11.5px;
+      height: 11.5px;
+    }
+
+    /* Geometric Status Dots (Replaces Multicolored Emoji Balls) */
+    .status-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-rose { background-color: var(--accent-rose); box-shadow: 0 0 6px rgba(244, 63, 94, 0.55); }
+    .dot-amber { background-color: var(--accent-amber); box-shadow: 0 0 6px rgba(245, 158, 11, 0.45); }
+    .dot-blue { background-color: var(--accent-blue); box-shadow: 0 0 6px rgba(56, 189, 248, 0.45); }
+    .dot-emerald { background-color: var(--accent-emerald); box-shadow: 0 0 6px rgba(16, 185, 129, 0.45); }
+    .dot-indigo { background-color: var(--accent-indigo); }
+    .dot-slate { background-color: var(--text-muted); }
+
+    /* Custom Subtle Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.18); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.32); }
+
+    /* ── LEFT SIDEBAR ── */
+    aside {
+      width: 386px;
+      background-color: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-sync {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: var(--radius-control);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background-color: rgba(16, 185, 129, 0.11);
+      color: #34D399;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      white-space: nowrap;
+    }
+
+    .btn-sync:hover {
+      background-color: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.55);
+    }
+    .btn-sync:disabled { opacity: 0.5; cursor: wait; }
+
+    /* Main Mode Switcher (2 Focused Operational Tabs) */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      padding: 8px 12px;
+      gap: 6px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .mode-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 30px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-base);
+      color: var(--text-secondary);
+      transition: all 0.14s ease;
+    }
+
+    .mode-tab:hover {
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    .mode-tab.active {
+      background-color: var(--accent-blue);
+      color: #060A10;
+      border-color: var(--accent-blue);
+      font-weight: 700;
+    }
+
+    /* Filter Bar inside Sidebar */
+    .sidebar-filters {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-wrap .ico {
+      position: absolute;
+      left: 10px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 32px;
+      padding: 0 11px 0 30px;
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.14s;
+    }
+
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus { border-color: var(--accent-blue); }
+
+    .filter-pills {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 24px;
+      padding: 0 9px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-base);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .filter-pills .pill {
+      height: 28px;
+      justify-content: flex-start;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pill:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .pill.active {
+      border-color: var(--accent-blue);
+      background-color: rgba(56, 189, 248, 0.14);
+      color: var(--accent-blue);
+    }
+
+    .list-counter {
+      padding: 6px 13px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── REFINED THREAD LIST (Linear Density Standard) ── */
+    .thread-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px 14px;
+      list-style: none;
+    }
+
+    .thread-card {
+      position: relative;
+      padding: 10px 12px;
+      border-radius: var(--radius-inner);
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-card);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .thread-card:hover {
+      background-color: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    .thread-card.active {
+      background-color: var(--bg-elevated);
+      border-color: var(--border-active);
+      box-shadow: var(--surface-highlight), 0 0 0 1px rgba(56, 189, 248, 0.18);
+    }
+
+    .tc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 6px;
+    }
+
+    .tc-client-kicker {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 175px;
+    }
+
+    /* Priority Badges: Severity = Color; Normal (P3) = Neutral Slate */
+    .prio-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      height: 19px;
+      padding: 0 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .prio-P1 { background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+    .prio-P2 { background: rgba(245, 158, 11, 0.14); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.32); }
+    .prio-P3 { background: rgba(148, 163, 184, 0.1); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.22); }
+
+    /* Action Badges */
+    .action-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      height: 19px;
+      padding: 0 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .act-ACAO_HOJE { background: rgba(244, 63, 94, 0.15); color: #FDA4AF; border-color: rgba(244, 63, 94, 0.3); }
+    .act-RESPONDER_HOJE { background: rgba(56, 189, 248, 0.14); color: #7DD3FC; border-color: rgba(56, 189, 248, 0.3); }
+    .act-COBRAR_FUP { background: rgba(245, 158, 11, 0.14); color: #FDE68A; border-color: rgba(245, 158, 11, 0.3); }
+    .act-CONFIRMAR_ENTREGA { background: rgba(129, 140, 248, 0.15); color: #C7D2FE; border-color: rgba(129, 140, 248, 0.3); }
+    .act-ALINHAR_INTERNO { background: rgba(148, 163, 184, 0.14); color: #E2E8F0; border-color: rgba(148, 163, 184, 0.28); }
+    .act-CONCLUIDO { background: rgba(16, 185, 129, 0.14); color: #6EE7B7; border-color: rgba(16, 185, 129, 0.3); }
+    .act-MONITORAR, .act-AGUARDANDO_RETORNO, .act-INFORMATIVO, .act-SISTEMA_BOT, .act-REATIVAR_OU_ARQUIVAR {
+      background: rgba(148, 163, 184, 0.09); color: #94A3B8; border-color: rgba(148, 163, 184, 0.2);
+    }
+
+    .tc-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.34;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tc-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── MAIN WORKSPACE (SMOOTH VERTICAL SCROLLING) ── */
+    main {
+      flex: 1;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px 20px 28px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #viewRadar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    #viewRecurring {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    /* Top KPI Strip (High-Contrast Tabular Numbers + Semantic Severity Dots) */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .kpi-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--surface-highlight);
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+
+    .kpi-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .kpi-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-secondary);
+      margin-bottom: 3px;
+    }
+
+    .kpi-value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .kpi-value.severity-critical {
+      color: #FB7185;
+    }
+
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Upgraded Top Detail Header */
+    .detail-header {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-panel);
+      padding: 13px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      flex-shrink: 0;
+    }
+
+    .dh-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    /* Unified Header Badges Row (Perfect Horizontal Alignment) */
+    .dh-badges-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+
+    .dh-badges-row > span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 24px;
+      padding: 0 9px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: var(--radius-control);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .dh-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1.24;
+    }
+
+    .dh-subtitle {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Operational Intelligence Grid inside Header (Click-to-Edit) */
+    .intel-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .intel-card {
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: border-color 0.14s ease, background-color 0.14s ease;
+    }
+
+    .intel-card:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      background-color: rgba(20, 30, 48, 0.45);
+    }
+
+    .intel-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-secondary);
+      margin-bottom: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .intel-label-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--accent-blue);
+    }
+
+    .intel-edit-hint {
+      opacity: 0.45;
+      transition: opacity 0.12s;
+    }
+
+    .intel-card:hover .intel-edit-hint {
+      opacity: 1;
+      color: var(--accent-blue);
+    }
+
+    .intel-value {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.32;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .intel-sub {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Right Command Deck inside Header (Elevated Surface, No Arbitrary Left Border) */
+    .command-box {
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--surface-highlight);
+      padding: 10px 12px;
+      border-radius: var(--radius-inner);
+      width: 496px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cmd-group-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .cmd-row {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cmd-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+
+    .btn-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 28px;
+      padding: 0 9px;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-surface);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .cmd-btn-grid .btn-status {
+      width: 100%;
+    }
+
+    .btn-status:hover {
+      border-color: var(--border-strong);
+      background-color: var(--bg-card-hover);
+    }
+
+    .btn-status.active-choice {
+      border-color: var(--accent-blue);
+      background-color: rgba(56, 189, 248, 0.18);
+      color: #7DD3FC;
+    }
+
+    .btn-status.done {
+      border-color: rgba(16, 185, 129, 0.4);
+      background-color: rgba(16, 185, 129, 0.13);
+      color: #34D399;
+    }
+
+    .btn-status.done:hover {
+      background-color: rgba(16, 185, 129, 0.22);
+    }
+
+    .btn-prio-P1.active-prio { background: rgba(244, 63, 94, 0.22); border-color: #FB7185; color: #FDA4AF; }
+    .btn-prio-P2.active-prio { background: rgba(245, 158, 11, 0.22); border-color: #FBBF24; color: #FDE68A; }
+    .btn-prio-P3.active-prio { background: rgba(148, 163, 184, 0.22); border-color: #CBD5E1; color: #F8FAFC; }
+
+    /* ── TWO-COLUMN WORKSPACE (NATURAL PAGE SCROLL) ── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.38fr 0.62fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-panel);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 10px 14px;
+      background-color: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+    }
+
+    .panel-body {
+      padding: 12px 14px;
+    }
+
+    .side-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Timeline Events */
+    .timeline {
+      position: relative;
+      padding-left: 22px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      bottom: 6px;
+      width: 1.5px;
+      background: rgba(148, 163, 184, 0.2);
+    }
+
+    .tl-event {
+      position: relative;
+      margin-bottom: 10px;
+      padding: 11px 13px;
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+    }
+
+    .tl-event:last-child { margin-bottom: 0; }
+
+    .tl-dot {
+      position: absolute;
+      left: -20px;
+      top: 15px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--accent-blue);
+      border: 2px solid var(--bg-surface);
+    }
+
+    .tl-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0 7px;
+      border-radius: 4px;
+    }
+
+    .st-CONTATO_INICIAL { background: rgba(56, 189, 248, 0.13); color: #38BDF8; }
+    .st-COTACAO_ENVIADA { background: rgba(129, 140, 248, 0.15); color: #818CF8; }
+    .st-DUVIDA_CUSTO, .st-RENEGOCIACAO { background: rgba(168, 85, 247, 0.15); color: #C084FC; }
+    .st-NOSSA_COBRANCA { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+    .st-CLIENTE_ESPERAR { background: rgba(244, 63, 94, 0.15); color: #FB7185; }
+    .st-PO_RECEBIDA { background: rgba(16, 185, 129, 0.16); color: #34D399; }
+    .st-LOGISTICA_NF, .st-FINANCEIRO { background: rgba(20, 184, 166, 0.15); color: #2DD4BF; }
+    .st-RASCUNHO, .st-RASCUNHO_ABERTO { background: rgba(244, 63, 94, 0.22); border: 1px solid rgba(244, 63, 94, 0.45); color: #FDA4AF; }
+    .st-MENSAGEM { background: rgba(148, 163, 184, 0.12); color: #94A3B8; }
+
+    .recurring-due-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 14px;
+      background: rgba(245, 158, 11, 0.11);
+      border: 1px solid rgba(245, 158, 11, 0.38);
+      border-radius: var(--radius-inner);
+      flex-shrink: 0;
+    }
+
+    .tl-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .tl-actor {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .tl-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .att-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(129, 140, 248, 0.12);
+      border: 1px solid rgba(129, 140, 248, 0.28);
+      color: #C7D2FE;
+      margin-top: 7px;
+      margin-right: 5px;
+    }
+
+    /* Reply Template Switcher & Ready-to-Send Editor */
+    .reply-template-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .reply-template-grid .pill {
+      height: 26px;
+      width: 100%;
+      font-size: 10.5px;
+      justify-content: center;
+    }
+
+    .reply-draft-area {
+      width: 100%;
+      min-height: 170px;
+      background-color: var(--bg-base);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-inner);
+      padding: 10px 12px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--text-primary);
+      line-height: 1.52;
+      resize: vertical;
+      outline: none;
+    }
+
+    .reply-draft-area:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
+    }
+
+    .notes-area {
+      width: 100%;
+      min-height: 62px;
+      background-color: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-inner);
+      padding: 8px 10px;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      resize: vertical;
+      margin-top: 5px;
+      outline: none;
+    }
+
+    .notes-area:focus { border-color: var(--accent-blue); }
+
+    /* Modal Overlays */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 13, 0.78);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-outer);
+      width: 460px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+    }
+
+    .modal-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+
+    .fup-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn-fup-opt {
+      padding: 10px 12px;
+      border-radius: var(--radius-inner);
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-elevated);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.14s;
+    }
+
+    .btn-fup-opt:hover {
+      border-color: var(--accent-amber);
+      background-color: rgba(245, 158, 11, 0.12);
+    }
+
+    /* Recurring View Form & Table */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-field label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+    }
+
+    .form-input {
+      height: 34px;
+      padding: 0 10px;
+      border-radius: var(--radius-control);
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .form-input:focus { border-color: var(--accent-blue); }
+
+    .kbd-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- MINI MODAL: AGENDAR FOLLOW-UP (FUP) -->
+  <div class="modal-backdrop hidden" id="fupModal">
+    <div class="modal-card">
+      <div class="modal-title">Agendar Próximo Follow-Up (FUP)</div>
+      <div class="modal-sub" id="fupModalSub">Em quanto tempo você quer voltar a cobrar ou revisar esta demanda?</div>
+      <div class="fup-grid">
+        <button class="btn-fup-opt" onclick="confirmScheduleFup(2, 'Em 2 dias')">Daqui a 2 dias<br><span style="font-size:10.5px; color:var(--text-secondary); font-weight:400;">Retorno rápido</span></button>
+        <button class="btn-fup-opt" onclick="confirmScheduleFup(7, 'Em 7 dias')">Daqui a 7 dias<br><span style="font-size:10.5px; color:var(--text-secondary); font-weight:400;">Ciclo semanal padrão</span></button>
+        <button class="btn-fup-opt" onclick="confirmScheduleFup(15, 'Em 15 dias')">Daqui a 15 dias<br><span style="font-size:10.5px; color:var(--text-secondary); font-weight:400;">Revisão quinzenal</span></button>
+        <button class="btn-fup-opt" onclick="confirmScheduleFup(30, 'Mês que vem (30d)')">Mês que vem (30 dias)<br><span style="font-size:10.5px; color:var(--text-secondary); font-weight:400;">Próximo fechamento</span></button>
+      </div>
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; margin-bottom: 14px;">
+        <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display:block; margin-bottom:6px;">Ou escolha uma data específica:</label>
+        <div style="display:flex; gap:8px;">
+          <input type="date" id="fupCustomDateInput" class="form-input" style="flex:1;">
+          <button class="btn-status" style="background:var(--accent-amber); color:#070B12; border:none; height:34px; font-weight:700;" onclick="confirmCustomDateFup()">Agendar Data</button>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button class="btn-status" onclick="createRecurringFromCurrentThread()">Transformar em Recorrente Fixo</button>
+        <button class="btn-status" onclick="closeFupModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MINI MODAL: EDITAR RAIO-X OPERACIONAL MANUALMENTE -->
+  <div class="modal-backdrop hidden" id="editIntelModal">
+    <div class="modal-card">
+      <div class="modal-title">Editar Dados Operacionais da Demanda</div>
+      <div class="modal-sub">Ajuste manualmente Cliente, Material, Frete ou Separação/Pátio (salvo no PostgreSQL):</div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;">
+        <div class="form-field">
+          <label>Cliente / Parceiro</label>
+          <input type="text" id="editIntelClient" class="form-input">
+        </div>
+        <div class="form-field">
+          <label>Material / Produto</label>
+          <input type="text" id="editIntelMaterial" class="form-input">
+        </div>
+        <div class="form-field">
+          <label>Volume & Preço Cotado</label>
+          <input type="text" id="editIntelVolPrice" class="form-input" placeholder="Ex: 14t • R$ 5.399,51/t CIF">
+        </div>
+        <div class="form-field">
+          <label>Cotação de Frete / Condição / Quem cotou</label>
+          <input type="text" id="editIntelFreight" class="form-input" placeholder="Ex: R$ 319,44/t (Cotado por Laura / Rodosafra)">
+        </div>
+        <div class="form-field">
+          <label>Separação de Material / Pátio / Embalagem</label>
+          <input type="text" id="editIntelWarehouse" class="form-input" placeholder="Ex: Valdecir (Joinville) • Big Bag 1.000kg">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn-status" onclick="closeEditIntelModal()">Cancelar</button>
+        <button class="btn-status done" onclick="saveManualIntel()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Left Sidebar -->
+  <aside>
+    <div class="brand">
+      <div>
+        <div class="brand-title">Enterprise Inbox Radar</div>
+        <div class="brand-sub" id="syncStatusSub">Sincronizado com Outlook Local</div>
+      </div>
+      <button class="btn-sync" id="btnSyncNow" onclick="triggerManualSync()">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+        Sincronizar
+      </button>
+    </div>
+
+    <!-- 2 Focused Operational Tabs -->
+    <div class="mode-tabs">
+      <div class="mode-tab active" id="tabBtnRadar" onclick="switchMainView('radar')">1. Meu Dia</div>
+      <div class="mode-tab" id="tabBtnRec" onclick="switchMainView('recurring')">2. Recorrentes</div>
+    </div>
+
+    <!-- Search & Action Filters (Symmetrical 5x2 Grid with Clean SVGs) -->
+    <div class="sidebar-filters" id="sidebarFiltersBox">
+      <div class="search-wrap">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Buscar cliente, PO, NF, material..." oninput="debounceLoadThreads()">
+      </div>
+      <div class="filter-pills">
+        <span class="pill active" data-filter="HOJE_FILA" onclick="setActionFilter('HOJE_FILA', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Fila do Dia
+        </span>
+        <span class="pill" data-filter="RESPONDER_HOJE" onclick="setActionFilter('RESPONDER_HOJE', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          Responder Cliente
+        </span>
+        <span class="pill" data-filter="COBRAR_FUP" onclick="setActionFilter('COBRAR_FUP', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Cobrar FUP
+        </span>
+        <span class="pill" data-filter="SEM_CONTATO_7D" onclick="setActionFilter('SEM_CONTATO_7D', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          +7d Sem Contato
+        </span>
+        <span class="pill" data-filter="ACAO_HOJE" onclick="setActionFilter('ACAO_HOJE', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          Logística / NF
+        </span>
+        <span class="pill" data-filter="ALINHAR_INTERNO" onclick="setActionFilter('ALINHAR_INTERNO', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Equipe Interna
+        </span>
+        <span class="pill" data-filter="CONFIRMAR_ENTREGA" onclick="setActionFilter('CONFIRMAR_ENTREGA', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          Com PO
+        </span>
+        <span class="pill" data-filter="CONCLUIDO" onclick="setActionFilter('CONCLUIDO', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Resolvidos
+        </span>
+        <span class="pill" data-filter="ALL" onclick="setActionFilter('ALL', this)">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Todos
+        </span>
+        <span class="pill" data-filter="SISTEMA_BOT" onclick="setActionFilter('SISTEMA_BOT', this)" title="GitHub, Cloudflare, Zapier, Read.ai">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+          Bots / Sistema
+        </span>
+      </div>
+    </div>
+
+    <div class="list-counter">
+      <span id="listCountLabel">Carregando demandas...</span>
+      <span style="display:inline-flex; align-items:center; gap:5px; color: var(--accent-emerald);">
+        <span class="status-dot dot-emerald"></span> PG Online
+      </span>
+    </div>
+
+    <ul class="thread-list" id="threadList"></ul>
+  </aside>
+
+  <!-- Main Area -->
+  <main>
+    <!-- VIEW 1: RADAR OPERACIONAL DIÁRIO -->
+    <div id="viewRadar">
+      <!-- Banner de Alerta de Rotinas Recorrentes Vencidas ou Vencendo Hoje -->
+      <div id="recurringDueBanner" class="recurring-due-banner hidden"></div>
+
+      <!-- Top KPI Strip (High-Contrast Numbers + Semantic Dots) -->
+      <div class="kpi-strip">
+        <div class="kpi-card" onclick="setPriorityFilter('P1')">
+          <div class="kpi-label"><span class="status-dot dot-rose"></span> Críticos Hoje (P1)</div>
+          <div class="kpi-value severity-critical" id="kpiP1">-</div>
+          <div class="kpi-sub">Exigem decisão ou ação hoje</div>
+        </div>
+        <div class="kpi-card" onclick="setActionFilterByName('RESPONDER_HOJE')">
+          <div class="kpi-label"><span class="status-dot dot-blue"></span> Responder Cliente</div>
+          <div class="kpi-value" id="kpiReply">-</div>
+          <div class="kpi-sub">Última msg do cliente externo</div>
+        </div>
+        <div class="kpi-card" onclick="setActionFilterByName('COBRAR_FUP')">
+          <div class="kpi-label"><span class="status-dot dot-amber"></span> Follow-Ups (Cobrar)</div>
+          <div class="kpi-value" id="kpiFup">-</div>
+          <div class="kpi-sub">Bola está com o cliente</div>
+        </div>
+        <div class="kpi-card" onclick="setActionFilterByName('SEM_CONTATO_7D')">
+          <div class="kpi-label"><span class="status-dot dot-amber"></span> +7 Dias Sem Contato</div>
+          <div class="kpi-value" id="kpi7d">-</div>
+          <div class="kpi-sub">Negociações paradas ≥ 7d</div>
+        </div>
+        <div class="kpi-card" onclick="setActionFilterByName('ACAO_HOJE')">
+          <div class="kpi-label"><span class="status-dot dot-indigo"></span> Operação / NF / Frete</div>
+          <div class="kpi-value" id="kpiOps">-</div>
+          <div class="kpi-sub">Embarque, NF ou financeiro</div>
+        </div>
+        <div class="kpi-card" onclick="switchMainView('recurring')">
+          <div class="kpi-label"><span class="status-dot dot-emerald"></span> Rotinas Recorrentes</div>
+          <div class="kpi-value" id="kpiRec">-</div>
+          <div class="kpi-sub">15d, mensais ou mês fixo</div>
+        </div>
+      </div>
+
+      <!-- Selected Thread Header + Raio-X Operacional -->
+      <div class="detail-header" id="detailHeader">
+        <div class="dh-top-row">
+          <div style="flex: 1; min-width: 0;">
+            <div class="dh-badges-row">
+              <span class="prio-badge prio-P1" id="dhPrio">P1</span>
+              <span class="action-badge act-ACAO_HOJE" id="dhAction">AÇÃO HOJE</span>
+              <span class="pill" id="dhCategory" style="cursor: default;">Comercial</span>
+              <span class="pill" id="dhStage" style="cursor: default;">Etapa</span>
+              <span class="pill" id="dhPo" style="cursor: default; display: none; border-color: rgba(16,185,129,0.45); color: #34D399;"></span>
+              <span class="pill" id="dhDraftBadge" style="cursor: pointer; display: none; border-color: rgba(244,63,94,0.55); background: rgba(244,63,94,0.18); color: #FDA4AF;" onclick="openLatestInOutlook()">RASCUNHO ABERTO NO OUTLOOK</span>
+              <span class="pill" id="dhFupBadge" style="cursor: pointer; display: none; border-color: rgba(245,158,11,0.45); color: #FBBF24;" onclick="openFupModal()"></span>
+            </div>
+            <h1 class="dh-title" id="dhTitle">Selecione uma demanda na barra lateral</h1>
+            <p class="dh-subtitle" id="dhSubtitle"></p>
+            <p style="font-size: 11px; color: #FDE68A; margin-top: 4px;" id="dhReason"></p>
+          </div>
+
+          <!-- Painel de Comando Intuitivo (Matriz 100% Simétrica com SVGs) -->
+          <div class="command-box">
+            <div class="cmd-row">
+              <span class="cmd-group-label">OUTLOOK (TECLA O)</span>
+              <div class="cmd-btn-grid">
+                <button class="btn-status" id="btnOpenLatestOutlook" style="background: var(--accent-blue); color: #060A10; border-color: var(--accent-blue); font-weight: 700;" onclick="openLatestInOutlook()" title="Abrir o último e-mail ou rascunho no Outlook (Tecla O)">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                  Abrir E-mail
+                </button>
+                <button class="btn-status" id="btnReplyAllOutlook" style="border-color: rgba(56, 189, 248, 0.45); color: #7DD3FC;" onclick="copyAndReplyInOutlook()" title="Copia a sugestão de resposta abaixo e já abre a janela Responder a Todos no Outlook">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                  Responder (Reply)
+                </button>
+                <button class="btn-status" id="btnPinThread" onclick="togglePinThread()" title="Fixar demanda no topo da lista">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                  Fixar
+                </button>
+              </div>
+            </div>
+
+            <div class="cmd-row">
+              <span class="cmd-group-label">PRIORIDADE (1/2/3)</span>
+              <div class="cmd-btn-grid">
+                <button class="btn-status btn-prio-P1" id="btnPrioP1" onclick="setManualPriority('P1')">
+                  <span class="status-dot dot-rose"></span> P1 Crítico
+                </button>
+                <button class="btn-status btn-prio-P2" id="btnPrioP2" onclick="setManualPriority('P2')">
+                  <span class="status-dot dot-amber"></span> P2 Atenção
+                </button>
+                <button class="btn-status btn-prio-P3" id="btnPrioP3" onclick="setManualPriority('P3')">
+                  <span class="status-dot dot-slate"></span> P3 Normal
+                </button>
+              </div>
+            </div>
+
+            <div class="cmd-row">
+              <span class="cmd-group-label">AÇÃO RÁPIDA (R/F)</span>
+              <div class="cmd-btn-grid">
+                <button class="btn-status done" onclick="updateThreadStatus('CONCLUIDO')" title="Atalho: tecla R">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  Resolvido
+                </button>
+                <button class="btn-status" style="border-color: rgba(245, 158, 11, 0.4); color: #FDE68A;" onclick="openFupModal()" title="Atalho: tecla F">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Agendar FUP
+                </button>
+                <button class="btn-status" onclick="updateThreadStatus('RESPONDER_HOJE')">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                  Responder
+                </button>
+              </div>
+            </div>
+
+            <div class="cmd-row">
+              <span class="cmd-group-label">CLASSIFICAR FILA</span>
+              <div class="cmd-btn-grid">
+                <button class="btn-status" onclick="updateThreadStatus('ACAO_HOJE')">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  Logística / NF
+                </button>
+                <button class="btn-status" onclick="updateThreadStatus('CONFIRMAR_ENTREGA')">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/></svg>
+                  Com PO
+                </button>
+                <button class="btn-status" onclick="updateThreadStatus('AUTO')" title="Voltar para classificação automática">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                  Automático
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAIO-X OPERACIONAL DA DEMANDA (5 CARTÕES CLICÁVEIS COM SVGs LIMPOS) -->
+        <div class="intel-grid">
+          <div class="intel-card" onclick="openEditIntelModal()" title="Clique para editar Cliente, Material, Frete ou Separação">
+            <div class="intel-label">
+              <span class="intel-label-left">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                Cliente / Parceiro
+              </span>
+              <span class="intel-edit-hint">✎</span>
+            </div>
+            <div class="intel-value" id="ixClient">-</div>
+            <div class="intel-sub" id="ixExternalContacts">-</div>
+          </div>
+
+          <div class="intel-card" onclick="openEditIntelModal()" title="Clique para editar Material e Preço">
+            <div class="intel-label">
+              <span class="intel-label-left">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                Material & Valor
+              </span>
+              <span class="intel-edit-hint">✎</span>
+            </div>
+            <div class="intel-value" id="ixMaterial">-</div>
+            <div class="intel-sub" id="ixVolumePrice">-</div>
+          </div>
+
+          <div class="intel-card" onclick="openEditIntelModal()" title="Clique para editar Cotação de Frete">
+            <div class="intel-label">
+              <span class="intel-label-left">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Cotação de Frete
+              </span>
+              <span class="intel-edit-hint">✎</span>
+            </div>
+            <div class="intel-value" id="ixFreight">-</div>
+            <div class="intel-sub" id="ixPackaging">-</div>
+          </div>
+
+          <div class="intel-card" onclick="openEditIntelModal()" title="Clique para editar quem vai separar o material">
+            <div class="intel-label">
+              <span class="intel-label-left">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                Separação / Pátio
+              </span>
+              <span class="intel-edit-hint">✎</span>
+            </div>
+            <div class="intel-value" id="ixWarehouse">-</div>
+            <div class="intel-sub" id="ixInternalTeam">-</div>
+          </div>
+
+          <div class="intel-card" onclick="openEditIntelModal()">
+            <div class="intel-label">
+              <span class="intel-label-left">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Quem Faz o Quê & Anexos
+              </span>
+              <span class="intel-edit-hint">✎</span>
+            </div>
+            <div class="intel-value" id="ixWhoDoing" style="font-size: 11px; font-weight: 500;">-</div>
+            <div class="intel-sub" id="ixAttachments" style="color: #C7D2FE;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline + Operational Side Panel (Independent Scrolling Panes) -->
+      <div class="content-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg class="ico" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Linha do Tempo (Mais Recente no Topo ↓ Mais Antigo na Base)
+            </span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span class="kbd-hint">J/K navega • O Outlook • R resolve • F FUP</span>
+              <span style="font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums;" id="tlCountBadge">0 mensagens</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="timeline" id="timelineContainer"></div>
+          </div>
+        </div>
+
+        <div class="side-column">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Anotações Operacionais & Follow-Up
+              </span>
+              <button class="btn-status done" style="height:25px;" onclick="saveThreadNotes()">Salvar Nota</button>
+            </div>
+            <div class="panel-body">
+              <div style="font-size: 11.5px; color: var(--text-secondary);">
+                <strong>Próximo Passo Recomendado:</strong>
+                <p id="dhRecommendation" style="color: var(--text-primary); margin-top: 3px; margin-bottom: 8px; line-height: 1.4;">-</p>
+              </div>
+              <label style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Minhas Anotações no PostgreSQL:</label>
+              <textarea class="notes-area" id="threadNotesInput" placeholder="Registre aqui o que foi alinhado por telefone/WhatsApp, quem cotou frete ou quando cobrar novamente..."></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">
+                <svg class="ico" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Sugestão de Resposta Pronta para o E-mail
+              </span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-status" style="height: 26px; border-color: rgba(56, 189, 248, 0.45); color: #7DD3FC;" onclick="copyAndReplyInOutlook()" title="Copia o texto e abre a janela de Resposta no Outlook">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                  Copiar & Responder
+                </button>
+                <button class="btn-status" style="background: var(--accent-blue); color: #060A10; border: none; font-weight: 700; height: 26px;" onclick="copyReplyPrompt()" id="btnCopyPrompt">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copiar
+                </button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="reply-template-grid">
+                <span class="pill active" id="tplBtnAuto" onclick="setReplyTemplateMode('AUTO', this)">Automática</span>
+                <span class="pill" id="tplBtnFup" onclick="setReplyTemplateMode('FUP', this)">Cobrar FUP</span>
+                <span class="pill" id="tplBtnQuote" onclick="setReplyTemplateMode('QUOTE', this)">Responder</span>
+                <span class="pill" id="tplBtnOps" onclick="setReplyTemplateMode('OPS', this)">Logística / NF</span>
+              </div>
+              <textarea class="reply-draft-area" id="replyPromptBox" style="min-height: 210px;" spellcheck="true"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: E-MAILS & TEMAS RECORRENTES (15 DIAS, MENSAL, MÊS ESPECÍFICO) -->
+    <div id="viewRecurring" class="hidden">
+      <div class="detail-header">
+        <div>
+          <span class="prio-badge prio-P2">AGENDA DE RECORRÊNCIAS COMERCIAIS & OPERACIONAIS</span>
+          <h1 class="dh-title" style="margin-top:6px;">Cadastros Recorrentes (Quinzenal, Mensal ou Retorno em Mês Específico)</h1>
+          <p class="dh-subtitle">Registre temas, cotações periódicas, confirmações de programação ou clientes que você precisa acionar a cada 15 dias, todo mês ou em um mês futuro.</p>
+        </div>
+
+        <div style="background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-inner); padding: 14px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">+ Cadastrar Novo E-mail / Tema Recorrente</div>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Assunto / O que confirmar *</label>
+              <input type="text" id="recTitle" class="form-input" placeholder="Ex: Confirmar programação mensal de Carburante">
+            </div>
+            <div class="form-field">
+              <label>Cliente / Fornecedor</label>
+              <input type="text" id="recClient" class="form-input" placeholder="Ex: Baltic Foundry AS / Scandia Steel AB">
+            </div>
+            <div class="form-field">
+              <label>Material / Tema</label>
+              <input type="text" id="recMaterial" class="form-input" placeholder="Ex: Carburante / FeMo / Silício">
+            </div>
+            <div class="form-field">
+              <label>Periodicidade</label>
+              <select id="recFreq" class="form-input" onchange="onRecFreqChange()">
+                <option value="QUINZENAL">A cada 15 dias (Quinzenal)</option>
+                <option value="SEMANAL">A cada 7 dias (Semanal)</option>
+                <option value="MENSAL">Mensalmente (A cada 30 dias)</option>
+                <option value="BIMESTRAL">A cada 60 dias</option>
+                <option value="MES_ESPECIFICO">Voltar no tema em um Mês Específico</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Data do Próximo Acionamento *</label>
+              <input type="date" id="recNextDate" class="form-input">
+            </div>
+            <div class="form-field">
+              <label>Mês Alvo / Observação Rápida</label>
+              <input type="text" id="recNotes" class="form-input" placeholder="Ex: Retomar negociação para lote de Dezembro">
+            </div>
+          </div>
+          <button class="btn-status done" style="padding: 0 16px; height: 32px; font-size: 12px;" onclick="createNewRecurring()">+ Salvar Recorrência no PostgreSQL</button>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1;">
+        <div class="panel-header">
+          <span class="panel-title">Minhas Confirmações e Temas Recorrentes Ativos</span>
+          <span style="font-size: 11px; color: var(--text-muted);" id="recCountLabel">0 cadastrados</span>
+        </div>
+        <div class="panel-body" id="recurringListContainer"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentActionFilter = 'HOJE_FILA';
+    let currentPriorityFilter = 'ALL';
+    let threadsCache = [];
+    let selectedThreadKey = null;
+    let selectedThreadData = null;
+    let searchTimer = null;
+
+    const actionLabels = {
+      'ACAO_HOJE': 'Logística / Ação Hoje',
+      'RESPONDER_HOJE': 'Responder Cliente',
+      'COBRAR_FUP': 'Cobrar Follow-Up',
+      'CONFIRMAR_ENTREGA': 'Acompanhar PO',
+      'ALINHAR_INTERNO': 'Equipe Interna',
+      'AGUARDANDO_RETORNO': 'Aguardando Cliente',
+      'MONITORAR': 'Monitoramento',
+      'CONCLUIDO': 'Resolvido',
+      'INFORMATIVO': 'Informativo',
+      'SISTEMA_BOT': 'Bot / Sistema',
+      'REATIVAR_OU_ARQUIVAR': 'Avaliar Reativação'
+    };
+
+    const stageLabels = {
+      'CONTATO_INICIAL': 'Contato Inicial / RFQ',
+      'DUVIDA_CUSTO': 'Análise Técnica / Custo',
+      'COTACAO_ENVIADA': 'Cotação Enviada',
+      'RENEGOCIACAO': 'Renegociação',
+      'NOSSA_COBRANCA': 'Nossa Cobrança (FUP)',
+      'CLIENTE_ESPERAR': 'Cliente Pediu Prazo',
+      'PO_RECEBIDA': 'Pedido / PO Emitida',
+      'LOGISTICA_NF': 'Logística / NF / Entrega',
+      'FINANCEIRO': 'Financeiro / Cobrança',
+      'RASCUNHO': 'Rascunho Aberto (Não Enviado)',
+      'RASCUNHO_ABERTO': 'Rascunho Aberto (Não Enviado)',
+      'MENSAGEM': 'Interação'
+    };
+
+    const dirLabels = {
+      'DRAFT': { text: '📝 RASCUNHO SALVO NO OUTLOOK (NÃO ENVIADO)', color: '#FB7185' },
+      'OUT': { text: '↗ ENVIADO POR VOCÊ', color: '#34D399' },
+      'TEAM_OUT': { text: '↗ INTERNAL TEAM → CLIENTE', color: '#818CF8' },
+      'INTERNAL': { text: '⇄ INTERNAL ALIGNMENT', color: '#FBBF24' },
+      'IN': { text: '↙ RECEBIDO DO CLIENTE / PARCEIRO', color: '#38BDF8' }
+    };
+
+    const prioDotClass = {
+      'P1': 'dot-rose',
+      'P2': 'dot-amber',
+      'P3': 'dot-slate'
+    };
+
+    function switchMainView(view) {
+      document.getElementById('viewRadar').classList.toggle('hidden', view !== 'radar');
+      document.getElementById('viewRecurring').classList.toggle('hidden', view !== 'recurring');
+
+      document.getElementById('tabBtnRadar').classList.toggle('active', view === 'radar');
+      document.getElementById('tabBtnRec').classList.toggle('active', view === 'recurring');
+
+      if (view === 'recurring') {
+        loadRecurringSchedules();
+      }
+    }
+
+    async function loadDashboardKpis() {
+      const res = await fetch('/api/dashboard');
+      const data = await res.json();
+      const k = data.kpis || {};
+      document.getElementById('kpiP1').textContent = k.p1_criticos ?? 0;
+      document.getElementById('kpiReply').textContent = k.pendentes_resposta ?? 0;
+      document.getElementById('kpiFup').textContent = k.cobrar_fup ?? 0;
+      document.getElementById('kpi7d').textContent = k.sem_contato_7d ?? 0;
+      document.getElementById('kpiOps').textContent = k.acao_operacional ?? 0;
+      document.getElementById('kpiRec').textContent = k.recurring_active ?? 0;
+
+      if (data.last_sync && data.last_sync.finished_at) {
+        const dt = new Date(data.last_sync.finished_at);
+        document.getElementById('syncStatusSub').textContent =
+          `Última varredura: ${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
+      }
+
+      const dueBanner = document.getElementById('recurringDueBanner');
+      const dueList = (data.due_recurring || []).filter(r => Number(r.days_until_due ?? 99) <= 0);
+      if (dueBanner) {
+        if (dueList.length > 0) {
+          const first = dueList[0];
+          const extraCnt = dueList.length > 1 ? ` (+${dueList.length - 1} outra(s))` : '';
+          dueBanner.classList.remove('hidden');
+          dueBanner.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#FDE68A;">
+              <span class="status-dot dot-amber"></span>
+              <strong>Rotina Recorrente pendente hoje:</strong>
+              <span>${escapeHtml(first.title)} (${escapeHtml(first.client_or_partner || 'Geral')})${extraCnt}</span>
+            </div>
+            <button class="btn-status" style="height:24px; border-color:rgba(245,158,11,0.5); color:#FDE68A;" onclick="switchMainView('recurring')">Abrir 2. Recorrentes →</button>
+          `;
+        } else {
+          dueBanner.classList.add('hidden');
+        }
+      }
+    }
+
+    async function loadThreads(preferredNextKey = null) {
+      const q = document.getElementById('searchInput').value.trim();
+      const params = new URLSearchParams({
+        action_status: currentActionFilter,
+        priority: currentPriorityFilter,
+        limit: '250'
+      });
+      if (q) params.set('q', q);
+
+      const res = await fetch(`/api/threads?${params.toString()}`);
+      const data = await res.json();
+      threadsCache = data.threads || [];
+
+      document.getElementById('listCountLabel').textContent = `${threadsCache.length} demandas listadas`;
+      renderThreadList();
+
+      if (threadsCache.length > 0) {
+        if (preferredNextKey && threadsCache.some(t => t.thread_key === preferredNextKey)) {
+          selectThread(preferredNextKey);
+        } else if (selectedThreadKey && threadsCache.some(t => t.thread_key === selectedThreadKey)) {
+          selectThread(selectedThreadKey);
+        } else {
+          selectThread(threadsCache[0].thread_key);
+        }
+      }
+    }
+
+    function debounceLoadThreads() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadThreads(), 220);
+    }
+
+    function setActionFilter(filter, el) {
+      currentActionFilter = filter;
+      currentPriorityFilter = 'ALL';
+      document.querySelectorAll('.sidebar-filters .pill').forEach(p => p.classList.remove('active'));
+      if (el) el.classList.add('active');
+      switchMainView('radar');
+      loadThreads();
+    }
+
+    function setActionFilterByName(filter) {
+      const pill = document.querySelector(`.sidebar-filters .pill[data-filter="${filter}"]`);
+      setActionFilter(filter, pill);
+    }
+
+    function setPriorityFilter(prio) {
+      currentPriorityFilter = prio;
+      currentActionFilter = 'ALL';
+      document.querySelectorAll('.sidebar-filters .pill').forEach(p => p.classList.remove('active'));
+      switchMainView('radar');
+      loadThreads();
+    }
+
+    function renderThreadList() {
+      const ul = document.getElementById('threadList');
+      if (!threadsCache.length) {
+        ul.innerHTML = `<li style="padding: 18px; color: var(--text-muted); font-size: 12px; text-align: center;">Nenhuma demanda encontrada neste filtro.</li>`;
+        return;
+      }
+
+      ul.innerHTML = threadsCache.map(t => {
+        const dt = t.last_message_at ? new Date(t.last_message_at) : null;
+        const dateStr = dt ? `${dt.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} ${dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}` : '';
+        const actLabel = actionLabels[t.effective_action] || t.effective_action;
+        const dotCls = prioDotClass[t.priority] || 'dot-slate';
+
+        const fupTag = t.fup_is_overdue
+          ? `<span class="pill" style="border-color:var(--accent-rose); background:rgba(244,63,94,0.18); color:#FDA4AF; height:18px; padding:0 5px; font-size:9px;">FUP HOJE</span>`
+          : (t.fup_label ? `<span class="pill" style="border-color:rgba(245,158,11,0.4); color:#FBBF24; height:18px; padding:0 5px; font-size:9px;">${escapeHtml(t.fup_label)}</span>` : '');
+
+        const draftTag = t.has_draft
+          ? `<span class="pill" style="border-color:rgba(244,63,94,0.55); background:rgba(244,63,94,0.2); color:#FDA4AF; height:18px; padding:0 5px; font-size:9px;">RASCUNHO</span>`
+          : '';
+
+        const noContactTag = (t.days_without_our_contact >= 7 && t.effective_action !== 'CONCLUIDO')
+          ? `<span style="color:#FBBF24; font-weight:600; font-size:10px;">• ${t.days_without_our_contact}d s/ contato</span>` : '';
+
+        return `
+          <li class="thread-card ${t.thread_key === selectedThreadKey ? 'active' : ''}" data-key="${t.thread_key}" onclick="selectThread('${t.thread_key}')">
+            <div class="tc-top">
+              <div style="display:flex; gap:6px; align-items:center; min-width:0;">
+                ${t.is_pinned ? `<svg class="ico ico-sm" style="color:var(--accent-blue);" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>` : ''}
+                <span class="prio-badge prio-${t.priority}"><span class="status-dot ${dotCls}"></span>${t.priority}</span>
+                <span class="tc-client-kicker">${escapeHtml(t.client_or_partner || 'Geral')}</span>
+                ${draftTag}
+                ${fupTag}
+              </div>
+              <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); flex-shrink:0;">${dateStr}</span>
+            </div>
+            <div class="tc-title">${escapeHtml(t.topic)}</div>
+            <div class="tc-meta">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden;">
+                <span class="action-badge act-${t.effective_action}">${actLabel}</span>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.product_or_theme || '')} ${noContactTag}</span>
+              </div>
+              <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); flex-shrink:0;">${t.message_count} msg</span>
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    async function selectThread(threadKey) {
+      selectedThreadKey = threadKey;
+      renderThreadList();
+
+      const res = await fetch(`/api/threads/${encodeURIComponent(threadKey)}`);
+      const data = await res.json();
+      selectedThreadData = data;
+      const t = data.thread;
+      const msgs = data.messages || [];
+      const autoIntel = t.intel_summary || {};
+      const manualIntel = t.manual_intel || {};
+
+      const prioEl = document.getElementById('dhPrio');
+      const dotCls = prioDotClass[t.priority] || 'dot-slate';
+      prioEl.innerHTML = `<span class="status-dot ${dotCls}"></span>${t.priority}${t.manual_priority ? ' (Manual)' : ''}`;
+      prioEl.className = `prio-badge prio-${t.priority}`;
+
+      ['P1', 'P2', 'P3'].forEach(p => {
+        const btn = document.getElementById(`btnPrio${p}`);
+        if (btn) btn.classList.toggle('active-prio', t.priority === p);
+      });
+
+      const pinBtn = document.getElementById('btnPinThread');
+      if (pinBtn) {
+        pinBtn.classList.toggle('active-choice', !!t.is_pinned);
+        pinBtn.innerHTML = `<svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg> ${t.is_pinned ? 'Fixado' : 'Fixar'}`;
+      }
+
+      const actEl = document.getElementById('dhAction');
+      actEl.textContent = actionLabels[t.effective_action] || t.effective_action;
+      actEl.className = `action-badge act-${t.effective_action}`;
+
+      document.getElementById('dhCategory').textContent = t.category;
+      document.getElementById('dhStage').textContent = stageLabels[t.current_stage] || t.current_stage;
+
+      const poEl = document.getElementById('dhPo');
+      if (t.po_number) {
+        poEl.style.display = 'inline-flex';
+        poEl.textContent = `PO #${t.po_number}`;
+      } else {
+        poEl.style.display = 'none';
+      }
+
+      const draftEl = document.getElementById('dhDraftBadge');
+      if (draftEl) {
+        draftEl.style.display = t.has_draft ? 'inline-flex' : 'none';
+      }
+
+      const fupEl = document.getElementById('dhFupBadge');
+      if (t.fup_due_at || t.fup_label) {
+        const dtStr = t.fup_due_at ? new Date(t.fup_due_at).toLocaleDateString('pt-BR') : '';
+        fupEl.style.display = 'inline-flex';
+        fupEl.textContent = `FUP: ${t.fup_label || ''} (${dtStr})`;
+      } else {
+        fupEl.style.display = 'none';
+      }
+
+      document.getElementById('dhTitle').textContent = t.topic;
+      document.getElementById('dhSubtitle').textContent =
+        `Última msg: ${t.last_sender_name} (${t.days_waiting}d atrás)  •  Dias sem contato nosso: ${t.days_without_our_contact} dia(s)`;
+
+      document.getElementById('dhReason').textContent = `Diagnóstico: ${t.priority_reason || '-'}`;
+      document.getElementById('dhRecommendation').textContent = t.recommended_action || '-';
+      document.getElementById('threadNotesInput').value = t.manual_notes || '';
+      document.getElementById('tlCountBadge').textContent = `${msgs.length} mensagens`;
+
+      // Populate Raio-X Operacional (Merging manual overrides over auto-extracted intel)
+      document.getElementById('ixClient').textContent = t.client_or_partner || autoIntel.client || '-';
+      document.getElementById('ixExternalContacts').textContent = `Contatos: ${autoIntel.external_contacts || '-'}`;
+      document.getElementById('ixMaterial').textContent = t.product_or_theme || autoIntel.material || '-';
+      document.getElementById('ixVolumePrice').textContent = manualIntel.vol_price || `Vol: ${autoIntel.volumes_found || '-'} | ${autoIntel.prices_found || '-'}`;
+      document.getElementById('ixFreight').textContent = manualIntel.freight_status || autoIntel.freight_status || '-';
+      document.getElementById('ixPackaging').textContent = `Embalagem: ${autoIntel.packaging || 'Padrão'}`;
+      document.getElementById('ixWarehouse').textContent = manualIntel.warehouse_separation || autoIntel.warehouse_separation || '-';
+      document.getElementById('ixInternalTeam').textContent = `INTERNAL TEAM: ${autoIntel.internal_team || '-'}`;
+
+      const whoList = Array.isArray(autoIntel.who_doing_what) ? autoIntel.who_doing_what : [];
+      document.getElementById('ixWhoDoing').innerHTML = whoList.length
+        ? whoList.map(item => `• ${escapeHtml(item)}`).join('<br>')
+        : '-';
+
+      const attList = Array.isArray(autoIntel.attachments) ? autoIntel.attachments : [];
+      document.getElementById('ixAttachments').textContent = attList.length
+        ? `${attList.length} anexo(s): ${attList.slice(0, 2).join(', ')}`
+        : '';
+
+      const tlContainer = document.getElementById('timelineContainer');
+      tlContainer.innerHTML = msgs.map((m, idx) => {
+        const dirInfo = m.folder === 'DRAFT' ? dirLabels['DRAFT'] : (dirLabels[m.direction] || dirLabels['IN']);
+        const msgAtts = Array.isArray(m.attachments) ? m.attachments : [];
+        const attsHtml = msgAtts.map(fn => `<span class="att-badge"><svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escapeHtml(fn)}</span>`).join('');
+
+        return `
+          <div class="tl-event" style="${idx === 0 ? 'border-color: rgba(56, 189, 248, 0.45); background-color: rgba(18, 26, 42, 0.72);' : ''}">
+            <div class="tl-dot" style="background-color: ${dirInfo.color};"></div>
+            <div class="tl-header">
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                ${idx === 0 ? `<span class="pill" style="border-color:var(--accent-blue); background:rgba(56,189,248,0.15); color:var(--accent-blue); height:20px; font-size:10px;">ÚLTIMO E-MAIL</span>` : ''}
+                <span class="stage-badge st-${m.stage_tag}">${escapeHtml(m.stage_label)}</span>
+                <span style="font-size:10px; font-weight:700; color:${dirInfo.color}; letter-spacing:0.04em;">${dirInfo.text}</span>
+                ${m.extracted_po ? `<span class="pill" style="border-color:rgba(16,185,129,0.45); color:#34D399; height:20px; font-size:10px;">PO ${escapeHtml(m.extracted_po)}</span>` : ''}
+                ${m.extracted_price ? `<span class="pill" style="border-color:rgba(245,158,11,0.45); color:#FBBF24; height:20px; font-size:10px;">${escapeHtml(m.extracted_price)}</span>` : ''}
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <span class="tl-time">${escapeHtml(m.date_br || '')}</span>
+                ${m.folder !== 'DRAFT' ? `<button class="btn-status" style="height:22px; padding:0 8px; font-size:10px; border-color:rgba(56,189,248,0.4); color:#7DD3FC;" onclick="openEmailById('${m.entry_id}', this, 'ReplyAll')">↩ Responder</button>` : ''}
+                <button class="btn-status" style="height:22px; padding:0 8px; font-size:10px;" onclick="openEmailById('${m.entry_id}', this, 'Display')">${m.folder === 'DRAFT' ? '📝 Abrir Rascunho no Outlook' : '↗ Abrir no Outlook'}</button>
+              </div>
+            </div>
+            <div class="tl-actor">
+              ${escapeHtml(m.sender_name || m.sender_email || 'Remetente')}
+              ${m.to_recipients ? `<span style="font-weight:400; color:var(--text-muted); font-size:11px;"> → Para: ${escapeHtml(m.to_recipients.slice(0, 95))}</span>` : ''}
+            </div>
+            <div class="tl-desc">${escapeHtml(m.snippet || '(Sem prévia de texto no corpo do e-mail)')}</div>
+            ${attsHtml ? `<div>${attsHtml}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      setReplyTemplateMode('AUTO', document.getElementById('tplBtnAuto'));
+    }
+
+    function extractFirstName(rawName) {
+      if (!rawName) return '';
+      let clean = String(rawName)
+        .replace(/<[^>]+>/g, '')
+        .replace(/\(.*?\)/g, '')
+        .replace(/["']/g, '')
+        .split(',')[0]
+        .split('-')[0]
+        .split('/')[0]
+        .trim();
+      if (!clean || clean.includes('@') || /^(geral|interno|equipe|comercial|vendas|compras|nfe|faturamento)$/i.test(clean)) {
+        return '';
+      }
+      const parts = clean.split(/\s+/).filter(Boolean);
+      // Handle Exiros / SAP style: "GOULART DOS SANTOS Mariana EXIROS.BR" -> pick "Mariana"
+      const mixedCasePart = parts.find(p => /^[A-ZÀ-Ý][a-zà-ÿ]{2,}$/.test(p) && !/^(Dos|Das|Del|Van|Von)$/.test(p));
+      if (mixedCasePart) {
+        return mixedCasePart;
+      }
+      let first = parts[0];
+      if (/^(sr\.?|sra\.?|dr\.?|eng\.?)$/i.test(first) && parts[1]) {
+        first = parts[1];
+      }
+      return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+    }
+
+    function buildReadyEmailReply(mode = 'AUTO') {
+      if (!selectedThreadData || !selectedThreadData.thread) return '';
+      const t = selectedThreadData.thread;
+      const msgs = selectedThreadData.messages || [];
+      const autoIntel = t.intel_summary || {};
+      const manualIntel = t.manual_intel || {};
+      const lastMsg = msgs[0] || {};
+
+      // Find best recipient name (prefer last external contact, or last sender if not analyst)
+      const extMsg = msgs.find(m => m.direction === 'IN');
+      let contactName = '';
+      if (t.effective_action === 'ALINHAR_INTERNO' && lastMsg.sender_name && !/analyst/i.test(lastMsg.sender_name)) {
+        contactName = extractFirstName(lastMsg.sender_name);
+      } else if (extMsg && extMsg.sender_name) {
+        contactName = extractFirstName(extMsg.sender_name);
+      } else if (autoIntel.external_contacts && autoIntel.external_contacts !== 'Apenas equipe interna na thread') {
+        contactName = extractFirstName(String(autoIntel.external_contacts).split(',')[0]);
+      } else if (lastMsg.sender_name && !/analyst/i.test(lastMsg.sender_name)) {
+        contactName = extractFirstName(lastMsg.sender_name);
+      }
+
+      const hour = new Date().getHours();
+      const periodGreeting = hour < 12 ? 'Bom dia' : (hour < 18 ? 'Boa tarde' : 'Boa noite');
+      const greeting = contactName
+        ? `${periodGreeting}, ${contactName}, tudo bem?`
+        : `${periodGreeting}, prezados, tudo bem?`;
+
+      const materialName = (t.product_or_theme && !/geral|diversos|outros/i.test(t.product_or_theme))
+        ? t.product_or_theme
+        : `"${t.topic}"`;
+
+      const rawPrice = manualIntel.vol_price || (autoIntel.prices_found && autoIntel.prices_found !== 'Sem preço explícito no corpo' ? autoIntel.prices_found : '');
+      const rawVol = (!manualIntel.vol_price && autoIntel.volumes_found && autoIntel.volumes_found !== 'Não especificado no texto') ? autoIntel.volumes_found : '';
+      const rawFreight = manualIntel.freight_status || (autoIntel.freight_status && !/não mencionado|sem valor/i.test(autoIntel.freight_status) ? autoIntel.freight_status : '');
+      const poInfo = t.po_number ? ` (Pedido / PO #${t.po_number})` : '';
+
+      let effectiveMode = mode;
+      if (mode === 'AUTO') {
+        if (t.effective_action === 'COBRAR_FUP' || t.days_without_our_contact >= 7 || t.current_stage === 'COTACAO_ENVIADA' || t.current_stage === 'NOSSA_COBRANCA') {
+          effectiveMode = 'FUP';
+        } else if (t.effective_action === 'ACAO_HOJE' || t.effective_action === 'CONFIRMAR_ENTREGA' || t.current_stage === 'LOGISTICA_NF' || t.current_stage === 'PO_RECEBIDA' || t.current_stage === 'FINANCEIRO') {
+          effectiveMode = 'OPS';
+        } else if (t.effective_action === 'ALINHAR_INTERNO') {
+          effectiveMode = 'INTERNAL';
+        } else {
+          effectiveMode = 'QUOTE';
+        }
+      }
+
+      if (effectiveMode === 'INTERNAL') {
+        const extra = [
+          poInfo ? `PO #${t.po_number}` : '',
+          rawFreight ? `Frete: ${rawFreight}` : ''
+        ].filter(Boolean).join(' • ');
+        return `${greeting}\n\nSobre a demanda de ${materialName} (${t.client_or_partner || 'Cliente'})${extra ? ` [${extra}]` : ''}, consegue me atualizar sobre o status ou confirmar se já podemos dar retorno ao cliente?\n\nObrigado!\nanalyst Soares`;
+      }
+
+      if (effectiveMode === 'FUP') {
+        const condSpecs = [rawVol, rawPrice].filter(Boolean).join(' • ');
+        const condClause = condSpecs ? ` (${condSpecs})` : '';
+        return `${greeting}\n\nGostaria de verificar se você conseguiu avaliar nossa proposta comercial referente ao fornecimento de ${materialName}${condClause}.\n\nConseguimos avançar com o fechamento ou programação deste lote para esta semana? Caso precise revisar alguma condição comercial, volume ou frete, fico à inteira disposição.\n\nAtenciosamente,\nCommercial Desk\nNordic Metals Demo`;
+      }
+
+      if (effectiveMode === 'OPS') {
+        const freightClause = rawFreight ? `\n• Condição logística / frete: ${rawFreight}` : '';
+        const whClause = (manualIntel.warehouse_separation || (autoIntel.warehouse_separation && !/sem ordem/i.test(autoIntel.warehouse_separation)))
+          ? `\n• Status de separação / embarque: ${manualIntel.warehouse_separation || autoIntel.warehouse_separation}`
+          : '';
+        return `${greeting}\n\nReferente ao atendimento de ${materialName}${poInfo}, estamos acompanhando a programação de separação, faturamento (NF) e embarque junto à nossa equipe operacional.${freightClause}${whClause}\n\nAssim que tivermos a confirmação atualizada de coleta e envio da Nota Fiscal, encaminho os dados por aqui.\n\nAtenciosamente,\nCommercial Desk\nNordic Metals Demo`;
+      }
+
+      // Default: QUOTE / RESPONDER CLIENTE
+      const hasCommercialData = Boolean(rawPrice || rawVol);
+      const specsLine = [
+        rawVol ? `• Volume considerado: ${rawVol}` : '',
+        rawPrice ? `• Condição comercial: ${rawPrice}` : '',
+        rawFreight ? `• Frete / modalidade: ${rawFreight}` : ''
+      ].filter(Boolean).join('\n');
+
+      if (hasCommercialData) {
+        return `${greeting}\n\nObrigado pelo contato e retorno sobre ${materialName}.\n\nSeguem abaixo os dados e condições atualizadas para atendimento da demanda:\n${specsLine}\n\nFico no aguardo da sua confirmação ou emissão do pedido para iniciarmos a programação de separação. Qualquer dúvida, estou à disposição.\n\nAtenciosamente,\nCommercial Desk\nNordic Metals Demo`;
+      }
+
+      return `${greeting}\n\nObrigado pela mensagem referente a ${materialName}.\n\nJá estamos validando internamente a disponibilidade de estoque, especificações técnicas e a melhor condição comercial/frete para atendê-los, e retornamos na sequência com a proposta completa.\n\nFico à disposição caso queira acrescentar algum detalhe de programação ou entrega.\n\nAtenciosamente,\nCommercial Desk\nNordic Metals Demo`;
+    }
+
+    function setReplyTemplateMode(mode, el) {
+      document.querySelectorAll('.reply-template-grid .pill').forEach(p => p.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const box = document.getElementById('replyPromptBox');
+      if (box) {
+        box.value = buildReadyEmailReply(mode);
+      }
+    }
+
+    function findNextThreadKeyAfterCurrent() {
+      const idx = threadsCache.findIndex(t => t.thread_key === selectedThreadKey);
+      if (idx === -1) return null;
+      if (idx + 1 < threadsCache.length) return threadsCache[idx + 1].thread_key;
+      if (idx - 1 >= 0) return threadsCache[idx - 1].thread_key;
+      return null;
+    }
+
+    async function updateThreadStatus(newStatus) {
+      if (!selectedThreadKey) return;
+      const nextCandidateKey = findNextThreadKeyAfterCurrent();
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual_status: newStatus })
+      });
+      await loadDashboardKpis();
+      await loadThreads(nextCandidateKey);
+    }
+
+    async function setManualPriority(prio) {
+      if (!selectedThreadKey) return;
+      const nextCandidateKey = findNextThreadKeyAfterCurrent();
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual_priority: prio })
+      });
+      await loadDashboardKpis();
+      await loadThreads(nextCandidateKey);
+    }
+
+    async function togglePinThread() {
+      if (!selectedThreadKey || !selectedThreadData) return;
+      const currentPin = !!selectedThreadData.thread.is_pinned;
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_pinned: !currentPin })
+      });
+      await loadThreads(selectedThreadKey);
+    }
+
+    // ── Modal para Editar Manualmente o Raio-X Operacional ──
+    function openEditIntelModal() {
+      if (!selectedThreadData) return;
+      const t = selectedThreadData.thread;
+      const autoIntel = t.intel_summary || {};
+      const manualIntel = t.manual_intel || {};
+
+      document.getElementById('editIntelClient').value = t.client_or_partner || '';
+      document.getElementById('editIntelMaterial').value = t.product_or_theme || '';
+      document.getElementById('editIntelVolPrice').value = manualIntel.vol_price || `Vol: ${autoIntel.volumes_found || '-'} | ${autoIntel.prices_found || '-'}`;
+      document.getElementById('editIntelFreight').value = manualIntel.freight_status || autoIntel.freight_status || '';
+      document.getElementById('editIntelWarehouse').value = manualIntel.warehouse_separation || autoIntel.warehouse_separation || '';
+      document.getElementById('editIntelModal').classList.remove('hidden');
+    }
+
+    function closeEditIntelModal() {
+      document.getElementById('editIntelModal').classList.add('hidden');
+    }
+
+    async function saveManualIntel() {
+      if (!selectedThreadKey) return;
+      const client = document.getElementById('editIntelClient').value.trim();
+      const material = document.getElementById('editIntelMaterial').value.trim();
+      const volPrice = document.getElementById('editIntelVolPrice').value.trim();
+      const freight = document.getElementById('editIntelFreight').value.trim();
+      const warehouse = document.getElementById('editIntelWarehouse').value.trim();
+
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_or_partner: client,
+          product_or_theme: material,
+          manual_intel: {
+            vol_price: volPrice,
+            freight_status: freight,
+            warehouse_separation: warehouse
+          }
+        })
+      });
+      closeEditIntelModal();
+      await loadThreads(selectedThreadKey);
+    }
+
+    // ── Modal de Agendamento de FUP ──
+    function openFupModal() {
+      if (!selectedThreadKey || !selectedThreadData) return;
+      const t = selectedThreadData.thread;
+      document.getElementById('fupModalSub').textContent = `Demanda: "${t.topic}" (${t.client_or_partner})`;
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      document.getElementById('fupCustomDateInput').value = nextWeek;
+      document.getElementById('fupModal').classList.remove('hidden');
+    }
+
+    function closeFupModal() {
+      document.getElementById('fupModal').classList.add('hidden');
+    }
+
+    async function confirmScheduleFup(days, label) {
+      if (!selectedThreadKey) return;
+      const nextCandidateKey = findNextThreadKeyAfterCurrent();
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manual_status: 'COBRAR_FUP',
+          fup_days: days,
+          fup_label: label
+        })
+      });
+      closeFupModal();
+      await loadDashboardKpis();
+      await loadThreads(nextCandidateKey);
+    }
+
+    async function confirmCustomDateFup() {
+      if (!selectedThreadKey) return;
+      const customDate = document.getElementById('fupCustomDateInput').value;
+      if (!customDate) return;
+      const dtBr = customDate.split('-').reverse().join('/');
+      const nextCandidateKey = findNextThreadKeyAfterCurrent();
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manual_status: 'COBRAR_FUP',
+          fup_custom_date: customDate,
+          fup_label: `Em ${dtBr}`
+        })
+      });
+      closeFupModal();
+      await loadDashboardKpis();
+      await loadThreads(nextCandidateKey);
+    }
+
+    function createRecurringFromCurrentThread() {
+      if (!selectedThreadData) return;
+      const t = selectedThreadData.thread;
+      closeFupModal();
+      switchMainView('recurring');
+      document.getElementById('recTitle').value = `Follow-Up Recorrente: ${t.topic}`;
+      document.getElementById('recClient').value = t.client_or_partner || '';
+      document.getElementById('recMaterial').value = t.product_or_theme || '';
+      document.getElementById('recNextDate').value = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10);
+    }
+
+    // ── Gestão de E-mails / Temas Recorrentes ──
+    function onRecFreqChange() {
+      const freq = document.getElementById('recFreq').value;
+      const mapDays = { 'SEMANAL': 7, 'QUINZENAL': 15, 'MENSAL': 30, 'BIMESTRAL': 60, 'MES_ESPECIFICO': 30 };
+      const days = mapDays[freq] || 15;
+      document.getElementById('recNextDate').value = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+    }
+
+    async function loadRecurringSchedules() {
+      const res = await fetch('/api/recurring');
+      const data = await res.json();
+      const list = data.schedules || [];
+      document.getElementById('recCountLabel').textContent = `${list.length} rotinas ativas`;
+
+      const container = document.getElementById('recurringListContainer');
+      if (!list.length) {
+        container.innerHTML = `<div style="padding: 20px; color: var(--text-muted); font-size: 12.5px; text-align: center;">Nenhuma rotina recorrente cadastrada ainda. Use o formulário acima ou o botão "Agendar FUP -> Transformar em Recorrente" em qualquer demanda.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(item => {
+        const dueBr = item.next_due_at ? String(item.next_due_at).split('-').reverse().join('/') : '-';
+        const daysLeft = Number(item.days_until_due ?? 0);
+        const statusColor = daysLeft <= 0 ? 'var(--accent-rose)' : (daysLeft <= 3 ? 'var(--accent-amber)' : 'var(--accent-emerald)');
+        const statusText = daysLeft < 0 ? `Atrasado há ${Math.abs(daysLeft)}d` : (daysLeft === 0 ? 'Vence HOJE!' : `Faltam ${daysLeft} dia(s)`);
+
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 12px 14px; background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-inner); margin-bottom: 8px;">
+            <div>
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:4px;">
+                <span class="prio-badge prio-${item.priority}">${item.priority}</span>
+                <span class="pill" style="color:var(--accent-blue); border-color:var(--accent-blue);">${escapeHtml(item.frequency_type)} (a cada ${item.interval_days}d)</span>
+                <span style="font-size:11.5px; font-weight:700; color:${statusColor};">Próximo: ${dueBr} (${statusText})</span>
+              </div>
+              <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">${escapeHtml(item.title)}</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">
+                Cliente: <strong>${escapeHtml(item.client_or_partner || 'Geral')}</strong> • Material: <strong>${escapeHtml(item.material_or_theme || '-')}</strong>
+                ${item.notes ? ` • Obs: ${escapeHtml(item.notes)}` : ''}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-status done" onclick="completeRecurringCycle(${item.id})">✓ Confirmado Hoje (Avançar Próximo Ciclo)</button>
+              <button class="btn-status" style="color:var(--accent-rose);" onclick="deleteRecurring(${item.id})">Excluir</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function createNewRecurring() {
+      const title = document.getElementById('recTitle').value.trim();
+      const nextDate = document.getElementById('recNextDate').value;
+      if (!title || !nextDate) {
+        alert('Preencha pelo menos o Assunto e a Data do Próximo Acionamento.');
+        return;
+      }
+      const freq = document.getElementById('recFreq').value;
+      const mapDays = { 'SEMANAL': 7, 'QUINZENAL': 15, 'MENSAL': 30, 'BIMESTRAL': 60, 'MES_ESPECIFICO': 30 };
+
+      await fetch('/api/recurring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          client_or_partner: document.getElementById('recClient').value.trim(),
+          material_or_theme: document.getElementById('recMaterial').value.trim(),
+          frequency_type: freq,
+          interval_days: mapDays[freq] || 15,
+          next_due_at: nextDate,
+          notes: document.getElementById('recNotes').value.trim(),
+          linked_thread_key: selectedThreadKey
+        })
+      });
+
+      document.getElementById('recTitle').value = '';
+      document.getElementById('recNotes').value = '';
+      await loadDashboardKpis();
+      await loadRecurringSchedules();
+    }
+
+    async function completeRecurringCycle(id) {
+      await fetch(`/api/recurring/${id}/complete`, { method: 'POST' });
+      await loadRecurringSchedules();
+    }
+
+    async function deleteRecurring(id) {
+      await fetch(`/api/recurring/${id}`, { method: 'DELETE' });
+      await loadDashboardKpis();
+      await loadRecurringSchedules();
+    }
+
+    async function saveThreadNotes() {
+      if (!selectedThreadKey) return;
+      const notes = document.getElementById('threadNotesInput').value;
+      await fetch(`/api/threads/${encodeURIComponent(selectedThreadKey)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manual_notes: notes })
+      });
+      await loadThreads(selectedThreadKey);
+    }
+
+    async function openEmailById(entryId, btnEl, mode = 'Display') {
+      if (!entryId) return;
+      const origHtml = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.textContent = mode === 'ReplyAll' ? 'Abrindo Reply...' : 'Abrindo...';
+      }
+      try {
+        const res = await fetch('/api/open-outlook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_id: entryId, mode })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.detail || 'Erro ao abrir e-mail no Outlook.');
+        }
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = origHtml;
+        }
+      }
+    }
+
+    async function openLatestInOutlook() {
+      if (!selectedThreadData || !selectedThreadData.messages || !selectedThreadData.messages.length) return;
+      const latestEntryId = selectedThreadData.messages[0].entry_id;
+      const btn = document.getElementById('btnOpenLatestOutlook');
+      await openEmailById(latestEntryId, btn, 'Display');
+    }
+
+    async function copyAndReplyInOutlook() {
+      if (!selectedThreadData || !selectedThreadData.messages || !selectedThreadData.messages.length) return;
+      copyReplyPrompt();
+      const msgs = selectedThreadData.messages;
+      const draftMsg = msgs.find(m => m.folder === 'DRAFT');
+      const btn = document.getElementById('btnReplyAllOutlook');
+      if (draftMsg) {
+        await openEmailById(draftMsg.entry_id, btn, 'Display');
+      } else {
+        await openEmailById(msgs[0].entry_id, btn, 'ReplyAll');
+      }
+    }
+
+    async function triggerManualSync() {
+      const btn = document.getElementById('btnSyncNow');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = 'Sincronizando...';
+      try {
+        await fetch('/api/sync?fresh=true', { method: 'POST' });
+        await loadDashboardKpis();
+        await loadThreads(selectedThreadKey);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    function copyReplyPrompt() {
+      const box = document.getElementById('replyPromptBox');
+      const text = box ? (box.value ?? box.textContent) : '';
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById('btnCopyPrompt');
+      const origHtml = btn.innerHTML;
+      btn.textContent = '✓ Resposta Copiada!';
+      setTimeout(() => { btn.innerHTML = origHtml; }, 1600);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Atalhos de Teclado para Triagem Rápida (J, K, O, R, F, 1, 2, 3) ──
+    document.addEventListener('keydown', (ev) => {
+      // Nunca interceptar atalhos com Ctrl, Alt ou Meta (ex: Ctrl+C, Ctrl+V, Ctrl+F, F5)
+      if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || (ev.target && ev.target.isContentEditable)) return;
+      if (!document.getElementById('fupModal').classList.contains('hidden')) {
+        if (ev.key === 'Escape') closeFupModal();
+        return;
+      }
+      if (!document.getElementById('editIntelModal').classList.contains('hidden')) {
+        if (ev.key === 'Escape') closeEditIntelModal();
+        return;
+      }
+
+      const key = ev.key.toLowerCase();
+      if (key === 'j') {
+        ev.preventDefault();
+        const idx = threadsCache.findIndex(t => t.thread_key === selectedThreadKey);
+        if (idx >= 0 && idx + 1 < threadsCache.length) selectThread(threadsCache[idx + 1].thread_key);
+      } else if (key === 'k') {
+        ev.preventDefault();
+        const idx = threadsCache.findIndex(t => t.thread_key === selectedThreadKey);
+        if (idx > 0) selectThread(threadsCache[idx - 1].thread_key);
+      } else if (key === 'o') {
+        ev.preventDefault();
+        openLatestInOutlook();
+      } else if (key === 'r') {
+        ev.preventDefault();
+        updateThreadStatus('CONCLUIDO');
+      } else if (key === 'f') {
+        ev.preventDefault();
+        openFupModal();
+      } else if (key === '1') {
+        setManualPriority('P1');
+      } else if (key === '2') {
+        setManualPriority('P2');
+      } else if (key === '3') {
+        setManualPriority('P3');
+      }
+    });
+
+    document.getElementById('recNextDate').value = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10);
+
+    loadDashboardKpis();
+    loadThreads();
+  </script>
+</body>
+</html>
+
+

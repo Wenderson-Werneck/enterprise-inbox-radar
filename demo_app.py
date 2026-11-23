@@ -1,162 +1,246 @@
 """
 One-command interactive web demo for Enterprise Inbox Radar & SLA Follow-Up Engine.
+Serves the authentic executive Linear/Apple Pro cockpit preloaded with 100% synthetic commercial threads.
 Run: python demo_app.py
 """
 import json
 import os
 from datetime import datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs, unquote
 from src.models import RawEmail
 from src.engine import InboxRadarEngine
 
 PORT = int(os.environ.get("PORT", "8005"))
+DEMO_HTML_PATH = os.path.join(os.path.dirname(__file__), "demo", "index.html")
 
 
-def run_radar():
+def build_synthetic_mailbox():
+    now = datetime(2026, 11, 23, 14, 0, tzinfo=timezone.utc)
     engine = InboxRadarEngine(
         internal_domain="nordicmetals.example",
         client_directory=[
             ("Baltic Foundry AS", ["balticfoundry", "baltic"]),
-            ("Scandia Steel AB", ["scandiasteel", "scandia"]),
-            ("Port Terminal Ops", ["portterminal"]),
+            ("Scandia Steelworks AB", ["scandiasteel", "scandia"]),
+            ("Vanguard Castings GmbH", ["vanguard", "castings"]),
+            ("Tallinn Port Logistics OÜ", ["portlogistics", "tallinnport"]),
         ],
     )
-    now = datetime(2026, 11, 23, 12, 0, tzinfo=timezone.utc)
-    emails = [
+    raw_messages = [
         RawEmail(
-            message_id="msg-101",
-            sender_email="procurement@balticfoundry.example",
-            sender_name="K. Tamm",
+            message_id="m-001",
+            sender_email="k.tamm@balticfoundry.example",
+            sender_name="Kristjan Tamm",
             recipient_emails=["sales@nordicmetals.example"],
-            subject="RFQ: Electrolytic Manganese 150 ton — PO 4500987123",
-            body_text="Hello team, confirming Pedido 4500987123 for 150 ton of Electrolytic Manganese. Please issue NF 89234 and confirm delivery slot.",
-            received_timestamp=(now - timedelta(hours=18)).isoformat(),
+            subject="RFQ: Electrolytic Manganese 150 ton — Pedido 4500987123",
+            body_text="Hello team, confirming Pedido 4500987123 for 150 ton of Electrolytic Manganese 99.7%. Please issue NF 89234 and confirm truck dispatch window for Thursday.",
+            received_timestamp=(now - timedelta(hours=5)).isoformat(),
         ),
         RawEmail(
-            message_id="msg-102",
+            message_id="m-002",
             sender_email="sales@nordicmetals.example",
             sender_name="Commercial Desk",
-            recipient_emails=["buyers@scandiasteel.example"],
-            subject="Re: Quotation — Ferro-Silicon 75% (80 ton)",
-            body_text="Quote sent for 80 ton FeSi 75% DDP. Awaiting your PO confirmation.",
-            received_timestamp=(now - timedelta(hours=36)).isoformat(),
+            recipient_emails=["a.lind@scandiasteel.example"],
+            subject="Re: Quotation — Ferro-Silicon 75% Lump (80 ton)",
+            body_text="Attached updated DDP quotation for 80 ton FeSi 75% Lump (valid 5 business days). Please let us know once procurement approves the PO.",
+            received_timestamp=(now - timedelta(days=4)).isoformat(),
         ),
         RawEmail(
-            message_id="msg-103",
-            sender_email="logistics@portterminal.example",
-            sender_name="Port Dispatch",
+            message_id="m-003",
+            sender_email="procurement@vanguardcastings.example",
+            sender_name="Lukas Weber",
+            recipient_emails=["sales@nordicmetals.example"],
+            subject="Urgent: Silicon Metal 553 specification & moisture certificate (60 ton)",
+            body_text="Before unloading the 60 ton batch, our QA lab requires the updated CoA and moisture analysis for NF 90412.",
+            received_timestamp=(now - timedelta(hours=11)).isoformat(),
+        ),
+        RawEmail(
+            message_id="m-004",
+            sender_email="dispatch@tallinnport.example",
+            sender_name="Port Operations",
             recipient_emails=["ops@nordicmetals.example"],
-            subject="FWD: Scale Ticket Batch & NF 90412 — 120 ton release",
-            body_text="Attached weighbridge batch for 120 ton and fiscal invoice NF 90412 for immediate clearance.",
-            received_timestamp=(now - timedelta(hours=4)).isoformat(),
+            subject="Weighbridge scale batch reconciliation — 120 ton release",
+            body_text="Scale tickets 9001–9004 cleared within ±0.3% tolerance for 120 ton bulk ferroalloy lot. Ready for carrier pickup.",
+            received_timestamp=(now - timedelta(hours=22)).isoformat(),
         ),
     ]
-    threads = engine.process_mailbox(emails)
-    return [t.model_dump() for t in threads]
+    triaged = engine.process_mailbox(raw_messages)
+
+    action_map = {
+        "DISPATCH_OPERATIONAL_ACTION": "ACAO_OPERACIONAL",
+        "REPLY_PENDING_CLIENT": "RESPONDER",
+        "FOLLOW_UP_OUTSTANDING_QUOTE": "COBRAR_FUP",
+        "ARCHIVED_RESOLVED": "CONCLUIDO",
+    }
+    prio_map = {"P1_URGENT": "P1", "P2_STANDARD": "P2", "P3_INFORMATIONAL": "P3"}
+
+    threads = []
+    messages_by_key = {}
+    for idx, t in enumerate(triaged):
+        raw = next((m for m in raw_messages if m.sender_email == t.last_sender_email), raw_messages[0])
+        act = action_map.get(t.stage, "RESPONDER")
+        prio = prio_map.get(t.priority, "P2")
+        po = t.entities.purchase_orders[0] if t.entities.purchase_orders else None
+        qty = f"{t.entities.quantities_metric_tons[0]:.0f} MT" if t.entities.quantities_metric_tons else "—"
+        nf = t.entities.invoice_numbers[0] if t.entities.invoice_numbers else None
+
+        thread_obj = {
+            "thread_key": t.thread_hash[:16],
+            "topic": t.normalized_subject,
+            "priority": prio,
+            "manual_priority": None,
+            "is_pinned": idx == 0,
+            "effective_action": act,
+            "category": "Comercial / Supply Chain",
+            "current_stage": t.stage,
+            "client_or_partner": t.entities.client_name or "External Counterparty",
+            "product_or_theme": t.entities.product_category or "Ferroalloys / Metals",
+            "po_number": po,
+            "has_draft": idx == 0,
+            "fup_is_overdue": act == "COBRAR_FUP",
+            "fup_label": "Follow-up 4d" if act == "COBRAR_FUP" else None,
+            "fup_due_at": (now + timedelta(days=1)).isoformat() if act == "COBRAR_FUP" else None,
+            "days_waiting": 4 if act == "COBRAR_FUP" else 1,
+            "days_without_our_contact": 8 if act == "COBRAR_FUP" else 1,
+            "message_count": t.total_messages,
+            "last_message_at": t.last_received_timestamp,
+            "last_sender_name": raw.sender_name,
+            "priority_reason": f"Detected {t.stage} with PO/NF entities ({po or nf or 'RFQ'})",
+            "recommended_action": "Confirm PO allocation, verify fiscal invoice, and reply to client within SLA window.",
+            "manual_notes": "",
+            "intel_summary": {
+                "material": t.entities.product_category or "Electrolytic Manganese / Ferroalloys",
+                "quantity": qty,
+                "invoice": nf or "Pending",
+                "internal_team": "Commercial & Logistics Desk",
+                "external_contacts": [f"{raw.sender_name} <{raw.sender_email}>"],
+            },
+            "manual_intel": {},
+        }
+        threads.append(thread_obj)
+        messages_by_key[thread_obj["thread_key"]] = [
+            {
+                "id": raw.message_id,
+                "direction": "TEAM_OUT" if t.is_last_sender_internal else "INBOUND",
+                "sender_name": raw.sender_name,
+                "sender_email": raw.sender_email,
+                "recipients": ", ".join(raw.recipient_emails),
+                "subject": raw.subject,
+                "sent_at": raw.received_timestamp,
+                "body_preview": raw.body_text,
+                "body_full": raw.body_text,
+                "has_attachments": idx in (0, 2),
+                "attachments": ["PO_4500987123_Synthetic.pdf"] if idx == 0 else (["CoA_Silicon553.pdf"] if idx == 2 else []),
+            }
+        ]
+    return threads, messages_by_key
 
 
-HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Enterprise Inbox Radar — Live Demo</title>
-  <style>
-    :root { --bg:#0a0f1c; --card:#131c30; --surf:#0d1424; --bdr:#23314c; --txt:#f1f5f9; --mut:#94a3b8; --acc:#38bdf8; --grn:#10b981; --amb:#f59e0b; --red:#ef4444; }
-    * { box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif; }
-    body { margin:0; background:var(--bg); color:var(--txt); padding:24px; line-height:1.45; }
-    .wrap { max-width:1280px; margin:0 auto; }
-    header { display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; margin-bottom:20px; border-bottom:1px solid var(--bdr); }
-    h1 { margin:0; font-size:1.35rem; }
-    .sub { margin:3px 0 0; font-size:0.84rem; color:var(--mut); }
-    .pill { padding:5px 11px; border-radius:999px; font-size:0.75rem; font-weight:600; background:rgba(56,189,248,0.14); color:var(--acc); border:1px solid rgba(56,189,248,0.3); }
-    .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
-    .kpi { background:var(--card); border:1px solid var(--bdr); border-radius:10px; padding:14px 16px; }
-    .kpi span { font-size:0.74rem; text-transform:uppercase; color:var(--mut); }
-    .kpi strong { display:block; font-size:1.35rem; margin-top:5px; }
-    .card { background:var(--card); border:1px solid var(--bdr); border-radius:10px; padding:18px; }
-    .card h2 { margin:0 0 12px; font-size:0.88rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--mut); border-bottom:1px solid var(--bdr); padding-bottom:8px; }
-    table { width:100%; border-collapse:collapse; font-size:0.84rem; }
-    th, td { text-align:left; padding:10px; border-bottom:1px solid var(--bdr); vertical-align:top; }
-    th { font-size:0.73rem; text-transform:uppercase; color:var(--mut); }
-    .badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:0.72rem; font-weight:700; }
-    .REPLY { background:rgba(239,68,68,0.16); color:var(--red); }
-    .FOLLOW { background:rgba(245,158,11,0.16); color:var(--amb); }
-    .DONE { background:rgba(16,185,129,0.16); color:var(--grn); }
-    .chip { display:inline-block; padding:2px 7px; border-radius:4px; background:var(--surf); border:1px solid var(--bdr); font-family:ui-monospace,monospace; font-size:0.74rem; margin-right:4px; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Enterprise Inbox Radar &amp; SLA Follow-Up Engine</h1>
-        <p class="sub">Automated SAP PO &amp; NF-e Entity Extraction, Subject-Hash Thread Clustering &amp; Commercial SLA State Machine</p>
-      </div>
-      <span class="pill">Python · Pydantic v2 · Synthetic Inbox Feed</span>
-    </header>
-    <div class="kpis" id="kpis"></div>
-    <div class="card">
-      <h2>Triaged Commercial Threads &amp; Extracted Entities</h2>
-      <table>
-        <thead><tr><th>Normalized Subject &amp; Hash</th><th>Stage / SLA</th><th>Client Match</th><th>Extracted POs / NFs / Tonnage</th><th>Messages</th></tr></thead>
-        <tbody id="body"></tbody>
-      </table>
-    </div>
-  </div>
-  <script>
-    fetch("/api/data").then(r => r.json()).then(rows => {
-      const needs = rows.filter(x => String(x.stage).includes("REPLY") || String(x.stage).includes("ACTION")).length;
-      const pos = rows.reduce((a,r) => a + (r.entities?.purchase_orders?.length || 0), 0);
-      const nfs = rows.reduce((a,r) => a + (r.entities?.invoice_numbers?.length || 0), 0);
-      document.getElementById("kpis").innerHTML = `
-        <div class="kpi"><span>Clustered Threads</span><strong>${rows.length}</strong></div>
-        <div class="kpi"><span>Action / Reply Queue</span><strong style="color:var(--red)">${needs}</strong></div>
-        <div class="kpi"><span>SAP POs Extracted</span><strong style="color:var(--acc)">${pos}</strong></div>
-        <div class="kpi"><span>Fiscal Invoices (NF-e)</span><strong style="color:var(--grn)">${nfs}</strong></div>
-      `;
-      document.getElementById("body").innerHTML = rows.map(r => {
-        const st = String(r.stage || "");
-        const cls = st.includes("REPLY") || st.includes("ACTION") ? "REPLY" : st.includes("FOLLOW") ? "FOLLOW" : "DONE";
-        const ent = r.entities || {};
-        const chips = [
-          ...(ent.purchase_orders || []).map(x => `<span class="chip">PO:${x}</span>`),
-          ...(ent.invoice_numbers || []).map(x => `<span class="chip">NF:${x}</span>`),
-          ...(ent.quantities_metric_tons || []).map(x => `<span class="chip">${x}t</span>`)
-        ].join("") || "<span style='color:var(--mut)'>None</span>";
-        return `<tr>
-          <td><strong>${r.normalized_subject}</strong><br><small style="color:var(--mut)">hash: <code>${String(r.thread_hash||"").slice(0,12)}</code> · priority: ${r.priority}</small></td>
-          <td><span class="badge ${cls}">${st}</span></td>
-          <td>${ent.client_name || "External Counterparty"}</td>
-          <td>${chips}</td>
-          <td>${r.total_messages || 1}</td>
-        </tr>`;
-      }).join("");
-    });
-  </script>
-</body>
-</html>"""
+THREADS, MESSAGES_BY_KEY = build_synthetic_mailbox()
+RECURRING = [
+    {
+        "id": 1,
+        "title": "Weekly PTAX & Freight Margin Review",
+        "client_or_partner": "Executive Treasury",
+        "frequency": "WEEKLY",
+        "next_due_at": "2026-11-23T17:00:00Z",
+        "days_until_due": 0,
+        "notes": "Compare S0 vs S-1 PTAX and review open bulk orders.",
+    },
+    {
+        "id": 2,
+        "title": "Monthly Warehouse Weighbridge Reconciliation",
+        "client_or_partner": "Tallinn Port Logistics OÜ",
+        "frequency": "MONTHLY",
+        "next_due_at": "2026-11-30T12:00:00Z",
+        "days_until_due": 7,
+        "notes": "Verify FIFO return balance within ±0.5% tolerance.",
+    },
+]
 
 
 class DemoHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
 
+    def _json(self, obj, code=200):
+        body = json.dumps(obj, default=str).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        parsed = urlparse(self.path)
+        p = parsed.path
+        if p in ("/", "/index.html"):
+            with open(DEMO_HTML_PATH, "rb") as f:
+                data = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(HTML.encode("utf-8"))
-        elif self.path == "/api/data":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(run_radar(), default=str).encode("utf-8"))
-        else:
-            self.send_response(404)
-            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        if p == "/api/dashboard":
+            kpis = {
+                "p1_criticos": sum(1 for t in THREADS if t["priority"] == "P1"),
+                "pendentes_resposta": sum(1 for t in THREADS if t["effective_action"] == "RESPONDER"),
+                "cobrar_fup": sum(1 for t in THREADS if t["effective_action"] == "COBRAR_FUP"),
+                "sem_contato_7d": sum(1 for t in THREADS if t["days_without_our_contact"] >= 7),
+                "acao_operacional": sum(1 for t in THREADS if t["effective_action"] == "ACAO_OPERACIONAL"),
+                "recurring_active": len(RECURRING),
+            }
+            self._json({
+                "kpis": kpis,
+                "last_sync": {"finished_at": datetime.now(timezone.utc).isoformat()},
+                "due_recurring": RECURRING,
+            })
+            return
+
+        if p == "/api/threads":
+            qs = parse_qs(parsed.query)
+            act = qs.get("action_status", ["ALL"])[0]
+            prio = qs.get("priority", ["ALL"])[0]
+            q = qs.get("q", [""])[0].lower().strip()
+            out = THREADS
+            if act not in ("ALL", "", "FILA_DIA", "HOJE_FILA", "MEU_DIA", "PENDENTES"):
+                if act == "SEM_CONTATO_7D":
+                    out = [t for t in out if t["days_without_our_contact"] >= 7]
+                elif act == "COM_PO":
+                    out = [t for t in out if t["po_number"]]
+                else:
+                    out = [t for t in out if t["effective_action"] == act]
+            if prio not in ("ALL", ""):
+                out = [t for t in out if t["priority"] == prio]
+            if q:
+                out = [t for t in out if q in (t["topic"] + " " + t["client_or_partner"]).lower()]
+            self._json({"threads": out})
+            return
+
+        if p.startswith("/api/threads/"):
+            key = unquote(p[len("/api/threads/"):])
+            t = next((x for x in THREADS if x["thread_key"] == key), THREADS[0])
+            self._json({"thread": t, "messages": MESSAGES_BY_KEY.get(t["thread_key"], [])})
+            return
+
+        if p == "/api/recurring":
+            self._json({"items": RECURRING})
+            return
+
+        self.send_response(404)
+        self.end_headers()
+
+    def do_POST(self):
+        self._json({"ok": True})
+
+    def do_PATCH(self):
+        self._json({"ok": True})
+
+    def do_DELETE(self):
+        self._json({"ok": True})
 
 
 if __name__ == "__main__":
-    print(f"Enterprise Inbox Radar Demo running at http://127.0.0.1:{PORT}")
+    print(f"Enterprise Inbox Radar (Authentic Cockpit Demo) running at http://127.0.0.1:{PORT}")
     HTTPServer(("127.0.0.1", PORT), DemoHandler).serve_forever()
