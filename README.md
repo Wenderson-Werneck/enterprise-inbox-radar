@@ -8,6 +8,22 @@ An automated corporate inbox triage, thread clustering, entity extraction, and S
 
 ---
 
+## 🖥️ Interactive Visual Demo (1-Command Launch)
+
+![Enterprise Inbox Radar — Live Demo Preview](docs/preview.png)
+
+Launch the interactive inbox triage, SAP PO/NF-e entity extraction, and SLA state machine dashboard preloaded with **100% synthetic commercial threads**:
+
+```bash
+git clone https://github.com/Wenderson-Werneck/enterprise-inbox-radar.git
+cd enterprise-inbox-radar
+pip install -r requirements.txt
+python demo_app.py
+# Open http://127.0.0.1:8005
+```
+
+---
+
 ## 🏗 System Architecture & Workflow
 
 ```mermaid
